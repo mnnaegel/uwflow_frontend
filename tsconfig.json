@@ -16,5 +16,5 @@
     "noEmit": true,
     "jsx": "react"
   },
-  "include": ["src", "codegen.js"]
+  "include": ["src", "codegen.js", "hc-codegen.js"]
 }

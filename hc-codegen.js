@@ -3,7 +3,7 @@ module.exports = {
   documents: ['./src/hotchocolate/**/*.tsx'],
   overwrite: true,
   generates: {
-    './src/generated/graphql.tsx': {
+    './src/hc-generated/graphql.tsx': {
       plugins: [
         'typescript',
         'typescript-operations',

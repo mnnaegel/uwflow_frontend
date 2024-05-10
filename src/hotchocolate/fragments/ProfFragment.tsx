@@ -2,33 +2,30 @@ import gql from 'graphql-tag';
 
 const ProfFragment = {
   profInfo: gql`
-    fragment ProfInfo on prof {
+    fragment ProfInfo on Professor {
       id
       name
-      code
+      uwoId
     }
   `,
   profCoursesTaught: gql`
-    fragment ProfCoursesTaught on prof {
+    fragment ProfCoursesTaught on Professor {
       id
-      prof_courses {
-        course {
-          id
-          code
+      sections {
+        courseOffering {
+          course {
+            faculty {
+              abbreviation
+              name
+            }
+          }
         }
       }
     }
   `,
   profRating: gql`
-    fragment ProfRating on prof {
+    fragment ProfRating on Professor {
       id
-      rating {
-        liked
-        clear
-        engaging
-        filled_count
-        comment_count
-      }
     }
   `,
 };
