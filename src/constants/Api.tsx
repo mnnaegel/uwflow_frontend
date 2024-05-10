@@ -4,8 +4,8 @@ export const GOOGLE_APP_ID = '292230821846-cogmasv1s0rbvhp0dr886vik2c73etb3';
 export const FACEBOOK_APP_ID = '219309734863464';
 
 /* Base endpoints */
-const LOCAL_GRAPHQL_ENDPOINT = 'http://localhost:8080/v1/graphql';
-const LOCAL_BACKEND_ENDPOINT = 'http://localhost:8081';
+const LOCAL_GRAPHQL_ENDPOINT = 'http://localhost:5095/graphql';
+const LOCAL_BACKEND_ENDPOINT = 'http://localhost:5095';
 
 export const GRAPHQL_ENDPOINT =
   process.env.NODE_ENV === 'development' ? LOCAL_GRAPHQL_ENDPOINT : '/graphql';
@@ -33,7 +33,7 @@ export const SCHEDULE_PARSE_ENDPOINT = '/parse/schedule';
 export const TRANSCRIPT_PARSE_ENDPOINT = '/parse/transcript';
 
 /* Search */
-export const SEARCH_DATA_ENDPOINT = '/data/search';
+export const SEARCH_DATA_ENDPOINT = '/courses';
 
 /* Calendar */
 export const CALENDAR_EXPORT_ENDPOINT = (secretId: string) =>
