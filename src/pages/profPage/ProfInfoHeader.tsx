@@ -3,7 +3,7 @@ import {
   ProfCoursesTaughtFragment,
   ProfInfoFragment,
   ProfRatingFragment,
-} from 'generated/graphql';
+} from 'hc-generated/graphql';
 import { getCoursePageRoute } from 'Routes';
 
 import RatingBox, {
@@ -28,10 +28,20 @@ type ProfInfoHeaderProps = {
 };
 
 const ProfInfoHeader = ({ prof }: ProfInfoHeaderProps) => {
-  const { liked, clear, engaging, filled_count, comment_count } = prof.rating!;
+  if (!prof) {
+    return null;
+  }
 
-  const profCourses = prof.prof_courses.map(
-    (courseObj) => courseObj.course!.code,
+  const {
+    averageQuality,
+    averageClarity,
+    averageDifficulty,
+    totalComments,
+    totalReviews,
+  } = prof.rating!;
+
+  const profCourses = prof.profCourses.map(
+    (courseObj) => (courseObj.faculty?.abbreviation ?? '') + courseObj.number,
   );
   const profCourseLinks = profCourses.map((courseCode, i) => (
     <span key={courseCode}>
@@ -52,20 +62,20 @@ const ProfInfoHeader = ({ prof }: ProfInfoHeaderProps) => {
       <ProfDescriptionSection>
         <RatingsSection ratingBoxHeight={RATING_BOX_HEIGHT}>
           <RatingBox
-            numRatings={filled_count}
-            numComments={comment_count}
+            numRatings={totalReviews}
+            numComments={totalComments}
             percentages={[
               {
-                displayName: 'Likes',
-                percent: liked,
+                displayName: 'Quality',
+                percent: averageQuality,
               },
               {
-                displayName: 'Clear',
-                percent: clear,
+                displayName: 'Clarity',
+                percent: averageClarity,
               },
               {
-                displayName: 'Engaging',
-                percent: engaging,
+                displayName: 'Difficulty',
+                percent: averageDifficulty,
               },
             ]}
           />

@@ -11,10 +11,10 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-  /** The built-in `Decimal` scalar type. */
-  Decimal: any;
   /** The `DateTime` scalar represents an ISO-8601 compliant date time type. */
   DateTime: any;
+  /** The built-in `Decimal` scalar type. */
+  Decimal: any;
 };
 
 export type BooleanOperationFilterInput = {
@@ -165,26 +165,6 @@ export type CourseReviewFilterInput = {
   id?: Maybe<IntOperationFilterInput>;
   createdDate?: Maybe<DateTimeOperationFilterInput>;
   modifiedDate?: Maybe<DateTimeOperationFilterInput>;
-};
-
-/** A connection to a list of items. */
-export type CoursesConnection = {
-  __typename?: 'CoursesConnection';
-  /** Information to aid in pagination. */
-  pageInfo: PageInfo;
-  /** A list of edges. */
-  edges?: Maybe<Array<CoursesEdge>>;
-  /** A flattened list of the nodes. */
-  nodes?: Maybe<Array<Course>>;
-};
-
-/** An edge in a connection. */
-export type CoursesEdge = {
-  __typename?: 'CoursesEdge';
-  /** A cursor for use in pagination. */
-  cursor: Scalars['String'];
-  /** The item at the end of the edge. */
-  node: Course;
 };
 
 export type CreateCourseReviewInput = {
@@ -348,21 +328,10 @@ export type Node = {
   id: Scalars['ID'];
 };
 
-/** Information about pagination in a connection. */
-export type PageInfo = {
-  __typename?: 'PageInfo';
-  /** Indicates whether more edges exist following the set defined by the clients arguments. */
-  hasNextPage: Scalars['Boolean'];
-  /** Indicates whether more edges exist prior the set defined by the clients arguments. */
-  hasPreviousPage: Scalars['Boolean'];
-  /** When paginating backwards, the cursor to continue. */
-  startCursor?: Maybe<Scalars['String']>;
-  /** When paginating forwards, the cursor to continue. */
-  endCursor?: Maybe<Scalars['String']>;
-};
-
 export type Professor = {
   __typename?: 'Professor';
+  rating: ReviewAggregate;
+  profCourses: Array<Course>;
   name: Scalars['String'];
   email: Scalars['String'];
   uwoId: Scalars['String'];
@@ -432,7 +401,6 @@ export type Query = {
   /** Lookup nodes by a list of IDs. */
   nodes: Array<Maybe<Node>>;
   jwtAsync: Scalars['String'];
-  courses?: Maybe<CoursesConnection>;
   courseByCode?: Maybe<Course>;
   professors: Array<Professor>;
   courseById: Course;
@@ -451,14 +419,6 @@ export type QueryNodeArgs = {
 
 export type QueryNodesArgs = {
   ids: Array<Scalars['ID']>;
-};
-
-export type QueryCoursesArgs = {
-  first?: Maybe<Scalars['Int']>;
-  after?: Maybe<Scalars['String']>;
-  last?: Maybe<Scalars['Int']>;
-  before?: Maybe<Scalars['String']>;
-  where?: Maybe<CourseFilterInput>;
 };
 
 export type QueryCourseByCodeArgs = {
@@ -500,6 +460,16 @@ export type QuerySectionsByCourseOfferingIdArgs = {
 
 export type QueryTimingDetailsBySectionIdArgs = {
   sectionId: Scalars['Int'];
+};
+
+export type ReviewAggregate = {
+  __typename?: 'ReviewAggregate';
+  averageQuality: Scalars['Float'];
+  averageDifficulty: Scalars['Float'];
+  averageHelpfulness: Scalars['Float'];
+  averageClarity: Scalars['Float'];
+  totalComments: Scalars['Int'];
+  totalReviews: Scalars['Int'];
 };
 
 export type Reviewer = Node & {
@@ -653,26 +623,29 @@ export type ProfCoursesTaughtFragment = { __typename?: 'Professor' } & Pick<
   Professor,
   'id'
 > & {
-    sections: Array<
-      { __typename?: 'Section' } & {
-        courseOffering: { __typename?: 'CourseOffering' } & {
-          course: { __typename?: 'Course' } & {
-            faculty?: Maybe<
-              { __typename?: 'Faculty' } & Pick<
-                Faculty,
-                'abbreviation' | 'name'
-              >
-            >;
-          };
-        };
-      }
+    profCourses: Array<
+      { __typename?: 'Course' } & Pick<Course, 'id' | 'name' | 'number'> & {
+          faculty?: Maybe<
+            { __typename?: 'Faculty' } & Pick<Faculty, 'abbreviation'>
+          >;
+        }
     >;
   };
 
 export type ProfRatingFragment = { __typename?: 'Professor' } & Pick<
   Professor,
   'id'
->;
+> & {
+    rating: { __typename?: 'ReviewAggregate' } & Pick<
+      ReviewAggregate,
+      | 'averageQuality'
+      | 'averageDifficulty'
+      | 'averageHelpfulness'
+      | 'averageClarity'
+      | 'totalComments'
+      | 'totalReviews'
+    >;
+  };
 
 export type GetProfQueryVariables = Exact<{
   uwoId?: Maybe<Scalars['String']>;
@@ -696,14 +669,12 @@ export const ProfInfoFragmentDoc = gql`
 export const ProfCoursesTaughtFragmentDoc = gql`
   fragment ProfCoursesTaught on Professor {
     id
-    sections {
-      courseOffering {
-        course {
-          faculty {
-            abbreviation
-            name
-          }
-        }
+    profCourses {
+      id
+      name
+      number
+      faculty {
+        abbreviation
       }
     }
   }
@@ -711,6 +682,14 @@ export const ProfCoursesTaughtFragmentDoc = gql`
 export const ProfRatingFragmentDoc = gql`
   fragment ProfRating on Professor {
     id
+    rating {
+      averageQuality
+      averageDifficulty
+      averageHelpfulness
+      averageClarity
+      totalComments
+      totalReviews
+    }
   }
 `;
 export const GetProfDocument = gql`

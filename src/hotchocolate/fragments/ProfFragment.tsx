@@ -11,14 +11,12 @@ const ProfFragment = {
   profCoursesTaught: gql`
     fragment ProfCoursesTaught on Professor {
       id
-      sections {
-        courseOffering {
-          course {
-            faculty {
-              abbreviation
-              name
-            }
-          }
+      profCourses {
+        id
+        name
+        number
+        faculty {
+          abbreviation
         }
       }
     }
@@ -26,6 +24,14 @@ const ProfFragment = {
   profRating: gql`
     fragment ProfRating on Professor {
       id
+      rating {
+        averageQuality
+        averageDifficulty
+        averageHelpfulness
+        averageClarity
+        totalComments
+        totalReviews
+      }
     }
   `,
 };

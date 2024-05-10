@@ -8,11 +8,11 @@ import {
   ProfCoursesTaughtFragment,
   ProfInfoFragment,
   ProfRatingFragment,
-} from 'generated/graphql';
+} from 'hc-generated/graphql';
+import { GET_PROF } from 'hotchocolate/queries/Prof';
 
 import LoadingSpinner from 'components/display/LoadingSpinner';
 import { DEFAULT_ERROR, NOT_FOUND } from 'constants/Messages';
-import { GET_PROF } from 'graphql/queries/prof/Prof';
 import NotFoundPage from 'pages/notFoundPage/NotFoundPage';
 import ProfInfoHeader from 'pages/profPage/ProfInfoHeader';
 import ProfReviews from 'pages/profPage/ProfReviews';
@@ -50,7 +50,7 @@ export const ProfPage = () => {
     GetProfQuery,
     GetProfQueryVariables
   >(GET_PROF, {
-    variables: { code: profCode },
+    variables: { uwoId: profCode },
   });
 
   return loading ? (
@@ -59,18 +59,18 @@ export const ProfPage = () => {
     </ProfPageWrapper>
   ) : error || !data ? (
     <NotFoundPage text={DEFAULT_ERROR} title="" />
-  ) : data.prof.length === 0 ? (
+  ) : data.professors.length === 0 ? (
     <NotFoundPage text={NOT_FOUND.prof} />
   ) : (
     <ProfPageWrapper>
       <Helmet>
-        <title>{data.prof[0].name} - UW Flow</title>
+        <title>{data.professors[0].name} - UW Flow</title>
         <meta
           name="description"
-          content={`Professor ${data.prof[0].name} at the University of Waterloo.`}
+          content={`Professor ${data.professors[0].name} at the University of Waterloo.`}
         />
       </Helmet>
-      <ProfPageContent prof={data.prof[0]} />
+      <ProfPageContent prof={data.professors[0]} />
     </ProfPageWrapper>
   );
 };
