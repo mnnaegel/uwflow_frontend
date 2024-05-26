@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { ExploreAllQuery, ExploreQuery } from 'generated/graphql';
+import { ExploreQuery } from 'hc-generated/graphql';
 
 import TabContainer from 'components/display/TabContainer';
 import Table from 'components/display/Table';
@@ -60,7 +60,7 @@ type SearchResultsProps = {
   profCourses: string[];
   loading: boolean;
   exploreAll: boolean;
-  data?: ExploreAllQuery | ExploreQuery;
+  data?: ExploreQuery;
 };
 
 const SearchResults = ({
@@ -90,37 +90,33 @@ const SearchResults = ({
       return;
     }
 
-    const allCourses = exploreAll
-      ? (data as ExploreAllQuery).course_search_index
-      : (data as ExploreQuery).search_courses;
+    const allCourses = (data as ExploreQuery).courses;
 
-    const allProfs = exploreAll
-      ? (data as ExploreAllQuery).prof_search_index
-      : (data as ExploreQuery).search_profs;
+    const allProfs = (data as ExploreQuery).professors;
 
     const newCourses: CourseSearchResult[] = allCourses.map((result) => ({
-      id: result.course_id!,
+      id: result.id!,
       code: result.code!,
       name: result.name!,
-      ratings: result.ratings,
-      liked: result.liked,
-      easy: result.easy,
-      useful: result.useful,
-      terms: result.terms,
+      ratings: result.rating.totalReviews,
+      liked: result.rating.averageLiked,
+      easy: result.rating.averageEasiness,
+      useful: result.rating.averageUsefulness,
       has_prereqs: result.has_prereqs ? result.has_prereqs?.valueOf() : false,
+      terms: result.terms.map((term) => term),
     }));
 
     const newProfs: ProfSearchResult[] = allProfs.map((result) => ({
-      id: result.prof_id!,
+      id: result.id!,
       code_name: {
-        code: result.code!,
+        code: result.uwoId!,
         name: result.name!,
       },
-      ratings: result.ratings,
-      liked: result.liked,
-      clear: result.clear,
-      engaging: result.engaging,
-      courses: new Set<string>(result.course_codes),
+      ratings: result.rating.totalReviews,
+      liked: result.rating.averageQuality,
+      clear: result.rating.averageClarity,
+      engaging: result.rating.averageDifficulty,
+      courses: new Set<string>([]),
     }));
 
     setCourses(newCourses);

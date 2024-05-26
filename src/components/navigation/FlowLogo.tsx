@@ -5,7 +5,7 @@ import { BlueText, FlowLogoWrapper } from './styles/FlowLogo';
 
 const FlowLogo = () => (
   <FlowLogoWrapper to={LANDING_PAGE_ROUTE}>
-    UW <BlueText>Flow</BlueText>
+    UWO <BlueText>Flow</BlueText>
   </FlowLogoWrapper>
 );
 

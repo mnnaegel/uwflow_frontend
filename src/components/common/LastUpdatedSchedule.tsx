@@ -38,7 +38,7 @@ const LastUpdatedSchedule = ({
     <LastUpdatedText margin={margin}>
       Last updated {updatedAt?.fromNow()} from{' '}
       <LastUpdatedLink href={buildLink()} target="_blank">
-        classes.uwaterloo.ca
+        https://www.westerncalendar.uwo.ca
       </LastUpdatedLink>
     </LastUpdatedText>
   );

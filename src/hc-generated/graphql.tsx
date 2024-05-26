@@ -66,11 +66,17 @@ export type ComponentTypeOperationFilterInput = {
   nin?: Maybe<Array<ComponentType>>;
 };
 
-export type Course = Node & {
+export type Course = {
   __typename?: 'Course';
   faculty?: Maybe<Faculty>;
   courseOfferings?: Maybe<Array<Maybe<CourseOffering>>>;
-  id: Scalars['ID'];
+  code: Scalars['String'];
+  rating: CourseReviewAggregate;
+  has_prereqs: Scalars['Boolean'];
+  prof_ids?: Maybe<Array<Scalars['Int']>>;
+  terms: Array<Scalars['Int']>;
+  postrequisites?: Maybe<Array<Maybe<Course>>>;
+  id: Scalars['Int'];
   number: Scalars['Int'];
   name: Scalars['String'];
   prerequisites: Scalars['String'];
@@ -105,7 +111,7 @@ export type CourseFilterInput = {
   >;
 };
 
-export type CourseOffering = Node & {
+export type CourseOffering = {
   __typename?: 'CourseOffering';
   sections?: Maybe<Array<Maybe<Section>>>;
   termId: Scalars['Int'];
@@ -114,7 +120,7 @@ export type CourseOffering = Node & {
   suffix: Suffix;
   courseId: Scalars['Int'];
   course: Course;
-  id: Scalars['ID'];
+  id: Scalars['Int'];
 };
 
 export type CourseOfferingFilterInput = {
@@ -146,6 +152,15 @@ export type CourseReview = {
   id: Scalars['Int'];
   createdDate: Scalars['DateTime'];
   modifiedDate: Scalars['DateTime'];
+};
+
+export type CourseReviewAggregate = {
+  __typename?: 'CourseReviewAggregate';
+  averageLiked: Scalars['Float'];
+  averageEasiness: Scalars['Float'];
+  averageUsefulness: Scalars['Float'];
+  totalComments: Scalars['Int'];
+  totalReviews: Scalars['Int'];
 };
 
 export type CourseReviewFilterInput = {
@@ -226,9 +241,9 @@ export type DeliveryTypeOperationFilterInput = {
   nin?: Maybe<Array<DeliveryType>>;
 };
 
-export type Faculty = Node & {
+export type Faculty = {
   __typename?: 'Faculty';
-  id: Scalars['ID'];
+  id: Scalars['Int'];
   enumBitmap?: Maybe<Scalars['String']>;
   name: Scalars['String'];
   abbreviation: Scalars['String'];
@@ -323,11 +338,6 @@ export type MutationCreateCourseReviewArgs = {
   input: CreateCourseReviewInput;
 };
 
-/** The node interface is implemented by entities that have a global unique identifier. */
-export type Node = {
-  id: Scalars['ID'];
-};
-
 export type Professor = {
   __typename?: 'Professor';
   rating: ReviewAggregate;
@@ -396,29 +406,16 @@ export type ProfessorReviewFilterInput = {
 
 export type Query = {
   __typename?: 'Query';
-  /** Fetches an object given its ID. */
-  node?: Maybe<Node>;
-  /** Lookup nodes by a list of IDs. */
-  nodes: Array<Maybe<Node>>;
   jwtAsync: Scalars['String'];
   courseByCode?: Maybe<Course>;
+  courses: Array<Course>;
   professors: Array<Professor>;
+  reviewerById: Reviewer;
   courseById: Course;
   facultyById: Faculty;
-  courseOfferingById: CourseOffering;
-  sectionById: Section;
-  reviewerById: Reviewer;
   courseOfferingsByCourseId: Array<CourseOffering>;
   sectionsByCourseOfferingId: Array<Section>;
   timingDetailsBySectionId: Array<TimingDetails>;
-};
-
-export type QueryNodeArgs = {
-  id: Scalars['ID'];
-};
-
-export type QueryNodesArgs = {
-  ids: Array<Scalars['ID']>;
 };
 
 export type QueryCourseByCodeArgs = {
@@ -426,28 +423,24 @@ export type QueryCourseByCodeArgs = {
   code: Scalars['Int'];
 };
 
+export type QueryCoursesArgs = {
+  where?: Maybe<CourseFilterInput>;
+};
+
 export type QueryProfessorsArgs = {
   where?: Maybe<ProfessorFilterInput>;
 };
 
+export type QueryReviewerByIdArgs = {
+  id: Scalars['Int'];
+};
+
 export type QueryCourseByIdArgs = {
-  id: Scalars['ID'];
+  id: Scalars['Int'];
 };
 
 export type QueryFacultyByIdArgs = {
-  id: Scalars['ID'];
-};
-
-export type QueryCourseOfferingByIdArgs = {
-  id: Scalars['ID'];
-};
-
-export type QuerySectionByIdArgs = {
-  id: Scalars['ID'];
-};
-
-export type QueryReviewerByIdArgs = {
-  id: Scalars['ID'];
+  id: Scalars['Int'];
 };
 
 export type QueryCourseOfferingsByCourseIdArgs = {
@@ -472,14 +465,14 @@ export type ReviewAggregate = {
   totalReviews: Scalars['Int'];
 };
 
-export type Reviewer = Node & {
+export type Reviewer = {
   __typename?: 'Reviewer';
   subjectId: Scalars['String'];
   courseReviewsWritten: Array<CourseReview>;
   professorReviewsWritten: Array<ProfessorReview>;
   courseReviewsLiked: Array<CourseReview>;
   professorReviewsLiked: Array<ProfessorReview>;
-  id: Scalars['ID'];
+  id: Scalars['Int'];
 };
 
 export type ReviewerFilterInput = {
@@ -497,9 +490,11 @@ export type ReviewerFilterInput = {
   id?: Maybe<IntOperationFilterInput>;
 };
 
-export type Section = Node & {
+export type Section = {
   __typename?: 'Section';
   timingDetails?: Maybe<Array<Maybe<TimingDetails>>>;
+  professors?: Maybe<Array<Maybe<Professor>>>;
+  courseOffering: CourseOffering;
   number: Scalars['Int'];
   componentType: ComponentType;
   classNumber: Scalars['Int'];
@@ -511,9 +506,7 @@ export type Section = Node & {
   professorNames: Array<Scalars['String']>;
   timingDetailsText: Scalars['String'];
   courseOfferingId: Scalars['Int'];
-  courseOffering: CourseOffering;
-  professors: Array<Professor>;
-  id: Scalars['ID'];
+  id: Scalars['Int'];
 };
 
 export type SectionFilterInput = {
@@ -614,6 +607,165 @@ export type TimingDetailsFilterInput = {
   id?: Maybe<IntOperationFilterInput>;
 };
 
+export type CourseInfoFragment = { __typename?: 'Course' } & Pick<
+  Course,
+  'id' | 'number' | 'facultyId' | 'code' | 'name' | 'description'
+> & {
+    faculty?: Maybe<{ __typename?: 'Faculty' } & Pick<Faculty, 'abbreviation'>>;
+    courseOfferings?: Maybe<
+      Array<
+        Maybe<
+          { __typename?: 'CourseOffering' } & Pick<CourseOffering, 'id'> & {
+              sections?: Maybe<
+                Array<
+                  Maybe<
+                    { __typename?: 'Section' } & {
+                      professors?: Maybe<
+                        Array<
+                          Maybe<
+                            { __typename?: 'Professor' } & Pick<
+                              Professor,
+                              'id' | 'uwoId' | 'name'
+                            > & {
+                                rating: {
+                                  __typename?: 'ReviewAggregate';
+                                } & Pick<
+                                  ReviewAggregate,
+                                  'averageQuality' | 'totalComments'
+                                >;
+                              }
+                          >
+                        >
+                      >;
+                    }
+                  >
+                >
+              >;
+            }
+        >
+      >
+    >;
+  };
+
+export type CourseScheduleFragment = { __typename?: 'Course' } & Pick<
+  Course,
+  'id'
+> & {
+    courseOfferings?: Maybe<
+      Array<
+        Maybe<
+          { __typename?: 'CourseOffering' } & Pick<
+            CourseOffering,
+            'id' | 'termId'
+          > & {
+              sections?: Maybe<
+                Array<
+                  Maybe<
+                    { __typename?: 'Section' } & Pick<
+                      Section,
+                      | 'id'
+                      | 'campus'
+                      | 'number'
+                      | 'classNumber'
+                      | 'componentType'
+                      | 'courseOfferingId'
+                      | 'waitListSize'
+                    > & {
+                        courseOffering: {
+                          __typename?: 'CourseOffering';
+                        } & Pick<CourseOffering, 'termId'>;
+                        professors?: Maybe<
+                          Array<
+                            Maybe<
+                              { __typename?: 'Professor' } & Pick<
+                                Professor,
+                                'name' | 'uwoId' | 'id'
+                              >
+                            >
+                          >
+                        >;
+                        timingDetails?: Maybe<
+                          Array<
+                            Maybe<
+                              { __typename?: 'TimingDetails' } & Pick<
+                                TimingDetails,
+                                | 'daysOfWeekBitmap'
+                                | 'id'
+                                | 'location'
+                                | 'sectionId'
+                                | 'time'
+                              >
+                            >
+                          >
+                        >;
+                      }
+                  >
+                >
+              >;
+            }
+        >
+      >
+    >;
+  };
+
+export type CourseRequirementsFragment = { __typename?: 'Course' } & Pick<
+  Course,
+  'id' | 'antirequisites' | 'prerequisites' | 'corequisites'
+> & {
+    postrequisites?: Maybe<
+      Array<
+        Maybe<{ __typename?: 'Course' } & Pick<Course, 'id' | 'code' | 'name'>>
+      >
+    >;
+  };
+
+export type CourseRatingFragment = { __typename?: 'Course' } & Pick<
+  Course,
+  'id'
+> & {
+    rating: { __typename?: 'CourseReviewAggregate' } & Pick<
+      CourseReviewAggregate,
+      | 'averageLiked'
+      | 'averageEasiness'
+      | 'averageUsefulness'
+      | 'totalReviews'
+      | 'totalComments'
+    >;
+  };
+
+export type CourseExploreFragment = { __typename?: 'Course' } & Pick<
+  Course,
+  | 'id'
+  | 'number'
+  | 'name'
+  | 'facultyId'
+  | 'code'
+  | 'has_prereqs'
+  | 'prof_ids'
+  | 'terms'
+> & {
+    rating: { __typename?: 'CourseReviewAggregate' } & Pick<
+      CourseReviewAggregate,
+      'averageLiked' | 'averageEasiness' | 'averageUsefulness' | 'totalReviews'
+    >;
+  };
+
+export type ProfExploreFragment = { __typename?: 'Professor' } & Pick<
+  Professor,
+  'email' | 'id' | 'name' | 'uwoId'
+> & {
+    rating: { __typename?: 'ReviewAggregate' } & Pick<
+      ReviewAggregate,
+      | 'averageQuality'
+      | 'averageDifficulty'
+      | 'averageHelpfulness'
+      | 'averageClarity'
+      | 'totalComments'
+      | 'totalReviews'
+    >;
+    profCourses: Array<{ __typename?: 'Course' } & Pick<Course, 'code'>>;
+  };
+
 export type ProfInfoFragment = { __typename?: 'Professor' } & Pick<
   Professor,
   'id' | 'name' | 'uwoId'
@@ -647,6 +799,29 @@ export type ProfRatingFragment = { __typename?: 'Professor' } & Pick<
     >;
   };
 
+export type GetCoursesQueryVariables = Exact<{
+  facultyAbbreviation: Scalars['String'];
+  number?: Maybe<Scalars['Int']>;
+}>;
+
+export type GetCoursesQuery = { __typename?: 'Query' } & {
+  courses: Array<
+    { __typename?: 'Course' } & CourseInfoFragment &
+      CourseScheduleFragment &
+      CourseRequirementsFragment &
+      CourseRatingFragment
+  >;
+};
+
+export type ExploreQueryVariables = Exact<{
+  facultyAbbreviation: Scalars['String'];
+}>;
+
+export type ExploreQuery = { __typename?: 'Query' } & {
+  courses: Array<{ __typename?: 'Course' } & CourseExploreFragment>;
+  professors: Array<{ __typename?: 'Professor' } & ProfExploreFragment>;
+};
+
 export type GetProfQueryVariables = Exact<{
   uwoId?: Maybe<Scalars['String']>;
 }>;
@@ -659,6 +834,128 @@ export type GetProfQuery = { __typename?: 'Query' } & {
   >;
 };
 
+export const CourseInfoFragmentDoc = gql`
+  fragment CourseInfo on Course {
+    id
+    number
+    facultyId
+    faculty {
+      abbreviation
+    }
+    code
+    name
+    description
+    courseOfferings {
+      id
+      sections {
+        professors {
+          id
+          uwoId
+          name
+          rating {
+            averageQuality
+            totalComments
+          }
+        }
+      }
+    }
+  }
+`;
+export const CourseScheduleFragmentDoc = gql`
+  fragment CourseSchedule on Course {
+    id
+    courseOfferings {
+      id
+      termId
+      sections {
+        id
+        campus
+        number
+        classNumber
+        componentType
+        courseOfferingId
+        courseOffering {
+          termId
+        }
+        professors {
+          name
+          uwoId
+          id
+        }
+        timingDetails {
+          daysOfWeekBitmap
+          id
+          location
+          sectionId
+          time
+        }
+        waitListSize
+      }
+    }
+  }
+`;
+export const CourseRequirementsFragmentDoc = gql`
+  fragment CourseRequirements on Course {
+    id
+    antirequisites
+    prerequisites
+    corequisites
+    postrequisites {
+      id
+      code
+      name
+    }
+  }
+`;
+export const CourseRatingFragmentDoc = gql`
+  fragment CourseRating on Course {
+    id
+    rating {
+      averageLiked
+      averageEasiness
+      averageUsefulness
+      totalReviews
+      totalComments
+    }
+  }
+`;
+export const CourseExploreFragmentDoc = gql`
+  fragment CourseExplore on Course {
+    id
+    number
+    name
+    facultyId
+    code
+    rating {
+      averageLiked
+      averageEasiness
+      averageUsefulness
+      totalReviews
+    }
+    has_prereqs
+    prof_ids
+    terms
+  }
+`;
+export const ProfExploreFragmentDoc = gql`
+  fragment ProfExplore on Professor {
+    email
+    id
+    name
+    uwoId
+    rating {
+      averageQuality
+      averageDifficulty
+      averageHelpfulness
+      averageClarity
+      totalComments
+      totalReviews
+    }
+    profCourses {
+      code
+    }
+  }
+`;
 export const ProfInfoFragmentDoc = gql`
   fragment ProfInfo on Professor {
     id
@@ -692,6 +989,134 @@ export const ProfRatingFragmentDoc = gql`
     }
   }
 `;
+export const GetCoursesDocument = gql`
+  query getCourses($facultyAbbreviation: String!, $number: Int) {
+    courses(
+      where: {
+        and: [
+          { number: { eq: $number } }
+          { faculty: { abbreviation: { startsWith: $facultyAbbreviation } } }
+        ]
+      }
+    ) {
+      ...CourseInfo
+      ...CourseSchedule
+      ...CourseRequirements
+      ...CourseRating
+    }
+  }
+  ${CourseInfoFragmentDoc}
+  ${CourseScheduleFragmentDoc}
+  ${CourseRequirementsFragmentDoc}
+  ${CourseRatingFragmentDoc}
+`;
+
+/**
+ * __useGetCoursesQuery__
+ *
+ * To run a query within a React component, call `useGetCoursesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetCoursesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetCoursesQuery({
+ *   variables: {
+ *      facultyAbbreviation: // value for 'facultyAbbreviation'
+ *      number: // value for 'number'
+ *   },
+ * });
+ */
+export function useGetCoursesQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    GetCoursesQuery,
+    GetCoursesQueryVariables
+  >,
+) {
+  return ApolloReactHooks.useQuery<GetCoursesQuery, GetCoursesQueryVariables>(
+    GetCoursesDocument,
+    baseOptions,
+  );
+}
+export function useGetCoursesLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetCoursesQuery,
+    GetCoursesQueryVariables
+  >,
+) {
+  return ApolloReactHooks.useLazyQuery<
+    GetCoursesQuery,
+    GetCoursesQueryVariables
+  >(GetCoursesDocument, baseOptions);
+}
+export type GetCoursesQueryHookResult = ReturnType<typeof useGetCoursesQuery>;
+export type GetCoursesLazyQueryHookResult = ReturnType<
+  typeof useGetCoursesLazyQuery
+>;
+export type GetCoursesQueryResult = ApolloReactCommon.QueryResult<
+  GetCoursesQuery,
+  GetCoursesQueryVariables
+>;
+export const ExploreDocument = gql`
+  query explore($facultyAbbreviation: String!) {
+    courses(
+      where: { faculty: { abbreviation: { startsWith: $facultyAbbreviation } } }
+    ) {
+      ...CourseExplore
+    }
+    professors {
+      ...ProfExplore
+    }
+  }
+  ${CourseExploreFragmentDoc}
+  ${ProfExploreFragmentDoc}
+`;
+
+/**
+ * __useExploreQuery__
+ *
+ * To run a query within a React component, call `useExploreQuery` and pass it any options that fit your needs.
+ * When your component renders, `useExploreQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useExploreQuery({
+ *   variables: {
+ *      facultyAbbreviation: // value for 'facultyAbbreviation'
+ *   },
+ * });
+ */
+export function useExploreQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    ExploreQuery,
+    ExploreQueryVariables
+  >,
+) {
+  return ApolloReactHooks.useQuery<ExploreQuery, ExploreQueryVariables>(
+    ExploreDocument,
+    baseOptions,
+  );
+}
+export function useExploreLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    ExploreQuery,
+    ExploreQueryVariables
+  >,
+) {
+  return ApolloReactHooks.useLazyQuery<ExploreQuery, ExploreQueryVariables>(
+    ExploreDocument,
+    baseOptions,
+  );
+}
+export type ExploreQueryHookResult = ReturnType<typeof useExploreQuery>;
+export type ExploreLazyQueryHookResult = ReturnType<typeof useExploreLazyQuery>;
+export type ExploreQueryResult = ApolloReactCommon.QueryResult<
+  ExploreQuery,
+  ExploreQueryVariables
+>;
 export const GetProfDocument = gql`
   query getProf($uwoId: String) {
     professors(where: { uwoId: { eq: $uwoId } }) {

@@ -29,7 +29,7 @@ const LandingPage = () => {
   return (
     <LandingPageWrapper>
       <Nav>
-        <LogoText>UW Flow</LogoText>
+        <LogoText>UWO Flow</LogoText>
         <ProfileWrapper>
           {(isLoggedIn || !isDesktop) && <ProfileDropdown />}
         </ProfileWrapper>
@@ -38,7 +38,8 @@ const LandingPage = () => {
         <Column>
           <TitleSearchBarWrapper>
             <TitleText>
-              Explore thousands of course and professor reviews from UW students
+              Explore thousands of course and professor reviews from UWO
+              students
             </TitleText>
             <SearchBar isLanding />
             <SubtitleText>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CourseInfoFragment, CourseRatingFragment } from 'generated/graphql';
+import { CourseInfoFragment, CourseRatingFragment } from 'hc-generated/graphql';
 
 import RatingBox, { RATING_BOX_WIDTH } from 'components/display/RatingBox';
 import ShortlistStar from 'components/input/ShortlistStar';
@@ -24,7 +24,13 @@ type CourseInfoHeaderProps = {
 };
 
 const CourseInfoHeader = ({ course, shortlisted }: CourseInfoHeaderProps) => {
-  const { liked, easy, useful, filled_count, comment_count } = course.rating!;
+  const {
+    averageLiked,
+    averageEasiness,
+    averageUsefulness,
+    totalComments,
+    totalReviews,
+  } = course.rating!;
 
   return (
     <CourseInfoHeaderWrapper>
@@ -51,20 +57,20 @@ const CourseInfoHeader = ({ course, shortlisted }: CourseInfoHeaderProps) => {
       <CourseDescriptionSection>
         <RatingsSection>
           <RatingBox
-            numRatings={filled_count}
-            numComments={comment_count}
+            numRatings={totalReviews}
+            numComments={totalComments}
             percentages={[
               {
                 displayName: 'Likes',
-                percent: liked,
+                percent: averageLiked,
               },
               {
                 displayName: 'Easy',
-                percent: easy,
+                percent: averageEasiness,
               },
               {
                 displayName: 'Useful',
-                percent: useful,
+                percent: averageUsefulness,
               },
             ]}
           />

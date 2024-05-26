@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import {
-  CourseScheduleFragment,
-  GetCourseWithUserDataQuery,
-  Prof,
-  Section_Meeting,
-} from 'generated/graphql';
+import { CourseScheduleFragment, Section } from 'hc-generated/graphql';
 import moment from 'moment/moment';
 
 import LastUpdatedSchedule from 'components/common/LastUpdatedSchedule';
@@ -12,157 +7,13 @@ import CollapsibleContainer from 'components/display/CollapsibleContainer';
 import TabContainer from 'components/display/TabContainer';
 import Table from 'components/display/Table';
 import { SECTION_ORDER } from 'constants/CourseSection';
-import { secsToTime, termCodeToDate, weekDayLetters } from 'utils/Misc';
+import { termCodeToDate } from 'utils/Misc';
 
 import {
   CourseScheduleWrapper,
   ScheduleTableWrapper,
 } from './styles/CourseSchedule';
 import { courseScheduleTableColumns } from './CourseScheduleTableColumns';
-
-/*
- * We first group the data by time of day range (start and end time) Now, each group should have
- * a time of day range, location, instructor, and all the more specific 'timeranges' the classes occur in.
- * Each timerange contains days of the week the class occurs as well as the start and end dates
- * of the weeks that timerange applies. We assume that, if the start and end dates are the same,
- * the time range is valid for the week beginning on that date and otherwise, the time range is
- * valid for the whole term. We order the timeranges for each grouping as follows:
- * the time range valid for the whole term, if it exists, comes first and everything else
- * is sorted by date.
- */
-
-type Meeting = Pick<
-  Section_Meeting,
-  | 'days'
-  | 'start_date'
-  | 'end_date'
-  | 'start_seconds'
-  | 'end_seconds'
-  | 'location'
-  | 'is_closed'
-  | 'is_cancelled'
-  | 'is_tba'
-> & {
-  prof?: Pick<Prof, 'id' | 'code' | 'name'> | null;
-};
-
-type TimeRange = {
-  days: string[];
-  startDate: any;
-  endDate: any;
-};
-
-type InfoGroup = {
-  time: string;
-  location?: string | null;
-  prof?: Pick<Prof, 'id' | 'code' | 'name'> | {};
-  timeRanges: TimeRange[];
-  cancelled: boolean;
-  isTba: boolean;
-};
-
-const getInfoGroupings = (meetings: Meeting[]) => {
-  const groupedByTimeOfDay = meetings.reduce(
-    (groupings: { [key: string]: InfoGroup }, curr) => {
-      const key = `${curr.start_seconds} ${curr.end_seconds}`;
-      if (!groupings[key]) {
-        groupings[key] = {
-          time: `${secsToTime(curr.start_seconds!)} - ${secsToTime(
-            curr.end_seconds!,
-          )}`,
-          location: curr.location,
-          prof:
-            curr.prof && curr.prof.code
-              ? {
-                  id: curr.prof.id,
-                  code: curr.prof.code,
-                  name: curr.prof.name,
-                }
-              : {},
-          timeRanges: [],
-          cancelled: curr.is_cancelled,
-          isTba: curr.is_tba,
-        };
-      }
-
-      groupings[key].timeRanges.push({
-        days: curr.days,
-        startDate: curr.start_date,
-        endDate: curr.end_date,
-      });
-      return groupings;
-    },
-    {},
-  );
-
-  const infoGroups: InfoGroup[] = [];
-
-  // Sort timeRanges for each group
-  Object.entries(groupedByTimeOfDay).forEach((entry) => {
-    entry[1].timeRanges.sort((a, b) => a.startDate - b.startDate);
-    infoGroups.push(entry[1]);
-  });
-
-  // Merge and sort days of week for timeRanges that occur in the same date range
-  infoGroups.forEach((entry) => {
-    const newTimeRanges: TimeRange[] = [];
-    let newDays: string[] = [];
-
-    entry.timeRanges.forEach((currRange, i) => {
-      if (i < entry.timeRanges.length - 1) {
-        const nextRange = entry.timeRanges[i + 1];
-        if (
-          currRange.startDate === nextRange.startDate &&
-          currRange.endDate === nextRange.endDate
-        ) {
-          currRange.days.forEach((day) => {
-            if (!newDays.includes(day)) {
-              newDays.push(day);
-            }
-          });
-          return;
-        }
-      }
-
-      currRange.days.forEach((day) => {
-        if (!newDays.includes(day) && weekDayLetters.includes(day)) {
-          newDays.push(day);
-        }
-      });
-
-      newDays.sort(
-        (a, b) => weekDayLetters.indexOf(a) - weekDayLetters.indexOf(b),
-      );
-      newTimeRanges.push({
-        days: newDays,
-        startDate: currRange.startDate,
-        endDate: currRange.endDate,
-      });
-      newDays = [];
-    });
-    entry.timeRanges = newTimeRanges;
-  });
-
-  const numDates = infoGroups.map((group) => group.timeRanges.length);
-
-  return {
-    times: infoGroups.map((group, i) =>
-      Object({
-        time: group.time,
-        spaces: numDates[i] - 1,
-        cancelled: group.cancelled,
-        isTba: group.isTba,
-      }),
-    ),
-    locations: infoGroups.map((group, i) =>
-      Object({ location: group.location, spaces: numDates[i] - 1 }),
-    ),
-    profs: infoGroups.map((group, i) =>
-      Object({ prof: group.prof, spaces: numDates[i] - 1 }),
-    ),
-    dates: infoGroups.map((group) => group.timeRanges),
-  };
-};
 
 const getStartingTab = (termsOffered: number[]) => {
   for (let i = 0; i < termsOffered.length; i += 1) {
@@ -183,74 +34,63 @@ const getStartingTab = (termsOffered: number[]) => {
 type CourseScheduleProps = {
   courseCode: string;
   courseId: number;
-  sections?: CourseScheduleFragment['sections'];
-  sectionSubscriptions?: GetCourseWithUserDataQuery['queue_section_subscribed'];
-  userEmail?: string | null;
+  offerings: CourseScheduleFragment['courseOfferings'];
 };
 
 const CourseSchedule = ({
   courseCode,
   courseId,
-  sections = [],
-  sectionSubscriptions = [],
-  userEmail = null,
+  offerings = [],
 }: CourseScheduleProps) => {
-  let termsOffered = sections.reduce((allTerms: number[], curr) => {
-    if (!allTerms.includes(curr.term_id)) {
-      allTerms.push(curr.term_id);
+  let termsOffered = offerings!.reduce((acc: number[], curr) => {
+    if (curr && curr.termId) {
+      if (!acc.includes(curr.termId)) {
+        acc.push(curr.termId);
+      }
     }
-    return allTerms;
+    return acc;
   }, []);
 
-  const hasBell: { [key: number]: boolean } = {};
-  termsOffered.forEach((term) => {
-    hasBell[term] = sections.some((section) => {
-      return (
-        section.enrollment_total >= section.enrollment_capacity &&
-        section.term_id === term
-      );
-    });
-  });
   termsOffered = termsOffered.sort().reverse();
 
   const startingTab = getStartingTab(termsOffered);
   const [selectedTerm, setSelectedTerm] = useState(startingTab);
 
-  if (sections.length === 0) {
+  if (offerings!.length === 0) {
     return null;
   }
 
-  const subscribedSectionIDs = sectionSubscriptions.map(
-    (subscription) => subscription.section_id,
-  );
+  const sections = offerings!.reduce((acc: Section[], curr) => {
+    if (curr && curr.sections !== undefined && curr.sections != null) {
+      for (const section of curr.sections) {
+        if (section) {
+          acc.push(section as Section);
+        }
+      }
+    }
+    return acc;
+  }, []);
 
   const sectionsCleanedData = sections
     .map((s) => ({
-      section: s.section_name,
-      class: s.class_number,
-      term: s.term_id,
+      section: `${s.componentType} ${s.number}`,
+      dates: s.timingDetails?.map((t) => t!.daysOfWeekBitmap) || [],
+      times: s.timingDetails?.map((t) => t!.time) || [],
+      locations: s.timingDetails?.map((t) => t!.location) || [],
+      profs: s.professors ?? [],
+      class: s.classNumber,
+      term: s.courseOffering.termId,
       enrolled: {
         course_id: courseId,
         course_code: courseCode,
         section_id: s.id,
-        filled: s.enrollment_total,
-        capacity: s.enrollment_capacity,
-        hasBell: hasBell[s.term_id],
-        selected: subscribedSectionIDs.includes(s.id),
-        userEmail,
+        filled: false,
+        capacity: 0,
+        hasBell: false,
+        selected: false,
       },
-      cancelled: sections.reduce((isCancelled, current) => {
-        return (
-          isCancelled ||
-          (current.term_id === s.term_id &&
-            current.meetings.reduce((cancelled, cur) => {
-              return cancelled || cur.is_cancelled;
-            }, false))
-        );
-      }, false),
       // Every grouping contains a single time of day, location, and instructor
       // and the classes that occur with those parameters.
-      ...getInfoGroupings(s.meetings),
     }))
     .sort((a, b) => {
       const sectionTypeA = a.section.split(' ')[0];
@@ -282,8 +122,6 @@ const CourseSchedule = ({
     };
   });
 
-  const updatedAt = moment.max(sections.map((s) => moment(s.updated_at)));
-
   return (
     <CourseScheduleWrapper>
       <CollapsibleContainer
@@ -306,7 +144,7 @@ const CourseSchedule = ({
           margin={'8px 0 32px 0'}
           courseCode={courseCode}
           term={termsOffered[selectedTerm]}
-          updatedAt={updatedAt}
+          updatedAt={moment(Date.now())}
         />
       )}
     </CourseScheduleWrapper>

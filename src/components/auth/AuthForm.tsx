@@ -141,7 +141,7 @@ const AuthForm = ({
           </PrivacyWrapper>
         </ContentWrapper>
         <SwapModalWrapper>
-          New to UW Flow?
+          New to UWO Flow?
           <SwapModalLink
             onClick={() => setShowLoginForm(!showLoginForm)}
             onMouseDown={(e) => e.preventDefault()}

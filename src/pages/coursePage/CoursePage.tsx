@@ -8,11 +8,10 @@ import {
   CourseRatingFragment,
   CourseRequirementsFragment,
   CourseScheduleFragment,
-  GetCourseQuery,
-  GetCourseQueryVariables,
-  GetCourseWithUserDataQuery,
-  ReviewInfoFragment,
-} from 'generated/graphql';
+  GetCoursesQuery,
+  GetCoursesQueryVariables,
+} from 'hc-generated/graphql';
+import { GET_COURSE } from 'hotchocolate/queries/Course';
 
 import LoadingSpinner from 'components/display/LoadingSpinner';
 import Button from 'components/input/Button';
@@ -20,10 +19,7 @@ import LikeCourseToggle from 'components/input/LikeCourseToggle';
 import { DEFAULT_ERROR, NOT_FOUND } from 'constants/Messages';
 import { AUTH_MODAL, COURSE_REVIEW_COURSE_MODAL } from 'constants/Modal';
 import { getIsBrowserDesktop, RootState } from 'data/reducers/RootReducer';
-import {
-  GET_COURSE,
-  GET_COURSE_WITH_USER_DATA,
-} from 'graphql/queries/course/Course';
+import { GET_COURSE_WITH_USER_DATA } from 'graphql/queries/course/Course';
 import useModal from 'hooks/useModal';
 import NotFoundPage from 'pages/notFoundPage/NotFoundPage';
 import { getUserId } from 'utils/Auth';
@@ -51,87 +47,53 @@ type Course = CourseInfoFragment &
 
 type CoursePageContentProps = {
   course: Course;
-  userEmail?: string | null;
-  userReview?: ReviewInfoFragment;
-  sectionSubscriptions?: GetCourseWithUserDataQuery['queue_section_subscribed'];
-  shortlisted?: boolean;
-  userCourseTaken?: boolean;
 };
 
-const CoursePageContent = ({
-  course,
-  userReview,
-  sectionSubscriptions = [],
-  shortlisted = false,
-  userCourseTaken = false,
-  userEmail = null,
-}: CoursePageContentProps) => {
-  const [openModal, closeModal] = useModal();
+const CoursePageContent = ({ course }: CoursePageContentProps) => {
   const isBrowserDesktop = useSelector(getIsBrowserDesktop);
-  const isLoggedIn = useSelector((state: RootState) => state.auth.loggedIn);
-
-  const handleReviewClick = () =>
-    isLoggedIn
-      ? openModal(COURSE_REVIEW_COURSE_MODAL, {
-          courseList: [{ course, review: userReview }],
-          onCancel: () => closeModal(COURSE_REVIEW_COURSE_MODAL),
-        })
-      : openModal(AUTH_MODAL);
 
   const Schedule = (
     <CourseSchedule
-      sections={course.sections}
+      offerings={course.courseOfferings}
       courseCode={course.code}
       courseId={course.id}
-      sectionSubscriptions={sectionSubscriptions}
-      userEmail={userEmail}
     />
   );
 
   return (
     <>
-      <CourseInfoHeader course={course} shortlisted={shortlisted} />
+      <CourseInfoHeader course={course} shortlisted={false} />
       <ColumnWrapper>
         {isBrowserDesktop && Schedule}
         <Column1>
           <ReviewWrapper>
             {!isBrowserDesktop && Schedule}
-            {(!isLoggedIn || userCourseTaken) && (
+            {(false || false) && (
               <CourseReviewQuestionBox>
                 <CourseQuestionTextAndToggle>
                   <CourseReviewQuestionText>
                     What do you think of {formatCourseCode(course.code)}?
                   </CourseReviewQuestionText>
-                  <LikeCourseToggle
-                    courseCode={course.code}
-                    courseId={course.id}
-                    profId={userReview?.prof_id}
-                    reviewId={userReview?.id}
-                    initialState={userReview?.liked}
-                  />
                 </CourseQuestionTextAndToggle>
                 <Button
                   width={isBrowserDesktop ? 'max-content' : '100%'}
                   padding="16px 24px"
-                  handleClick={handleReviewClick}
+                  handleClick={() => {}}
                 >
-                  {userReview ? 'Edit your review' : 'Add your review'}
+                  {false ? 'Edit your review' : 'Add your review'}
                 </Button>
               </CourseReviewQuestionBox>
             )}
           </ReviewWrapper>
-          <CourseReviews
-            courseId={course.id}
-            profsTeaching={course.profs_teaching}
-          />
+          {/* <CourseReviews courseId={course.id} profsTeaching={[]} /> */}
         </Column1>
         <Column2>
           <CourseRequisites
             courseCode={course.code}
-            prereqs={course.prereqs}
-            antireqs={course.antireqs}
-            coreqs={course.coreqs}
-            postreqs={course.postrequisites}
+            prereqs={course.prerequisites}
+            antireqs={course.antirequisites}
+            coreqs={course.corequisites}
+            postreqs={[]}
           />
         </Column2>
       </ColumnWrapper>
@@ -141,37 +103,29 @@ const CoursePageContent = ({
 
 const CoursePage = () => {
   const match = useRouteMatch<{ courseCode: string }>();
-  const isLoggedIn = useSelector((state: RootState) => state.auth.loggedIn);
 
   const courseCode = match.params.courseCode.toLowerCase();
-  const query = isLoggedIn ? GET_COURSE_WITH_USER_DATA : GET_COURSE;
+  const query = GET_COURSE;
+  // example code is 'educ2222'
   const variables = {
-    code: courseCode,
-    ...(isLoggedIn && { user_id: getUserId() }),
+    facultyAbbreviation: courseCode.match(/^[a-z]+/i)![0].toUpperCase(),
+    number: parseInt(courseCode.match(/\d+$/i)![0], 10),
+    // ...(isLoggedIn && { user_id: getUserId() }),
   };
 
   const { loading, error, data } = useQuery<
-    GetCourseQuery | GetCourseWithUserDataQuery,
-    GetCourseQueryVariables
+    GetCoursesQuery,
+    GetCoursesQueryVariables
   >(query, { variables });
 
-  const renderContent = (
-    queryData: GetCourseQuery | GetCourseWithUserDataQuery,
-  ) => {
-    if (isLoggedIn) {
-      const dataWithUser = queryData as GetCourseWithUserDataQuery;
-      return (
-        <CoursePageContent
-          course={dataWithUser.course[0]}
-          userEmail={dataWithUser.user[0].email}
-          userReview={dataWithUser.review[0]}
-          userCourseTaken={dataWithUser.user_course_taken.length > 0}
-          shortlisted={dataWithUser.user_shortlist.length > 0}
-          sectionSubscriptions={dataWithUser.queue_section_subscribed}
-        />
-      );
-    }
-    return <CoursePageContent course={queryData.course[0]} />;
+  const renderContent = (queryData: GetCoursesQuery) => {
+    const courses = queryData.courses[0];
+
+    return (
+      <>
+        <CoursePageContent course={courses} />
+      </>
+    );
   };
 
   return loading ? (
@@ -180,23 +134,26 @@ const CoursePage = () => {
     </CoursePageWrapper>
   ) : error || !data ? (
     <NotFoundPage text={DEFAULT_ERROR} title="" />
-  ) : data.course.length === 0 ? (
+  ) : data.courses.length === 0 ? (
     <NotFoundPage text={NOT_FOUND.course} />
   ) : (
     <CoursePageWrapper>
       <Helmet>
         <title>
-          {formatCourseCode(data.course[0].code)} - {data.course[0].name} - UW
-          Flow
+          {formatCourseCode(data.courses[0].code)} - {data.courses[0].name} -
+          UWO Flow
         </title>
-        <meta name="description" content={data.course[0].description!} />
+        <meta name="description" content={data.courses[0].description!} />
         <meta
           property="og:title"
-          content={`${formatCourseCode(data.course[0].code)} - ${
-            data.course[0].name
-          } - UW Flow`}
+          content={`${formatCourseCode(data.courses[0].code)} - ${
+            data.courses[0].name
+          } - UWO Flow`}
         />
-        <meta property="og:description" content={data.course[0].description!} />
+        <meta
+          property="og:description"
+          content={data.courses[0].description!}
+        />
       </Helmet>
       {renderContent(data)}
     </CoursePageWrapper>

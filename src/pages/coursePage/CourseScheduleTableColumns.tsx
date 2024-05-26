@@ -5,6 +5,8 @@ import { getProfPageRoute } from 'Routes';
 import { LAB, LEC, TUT } from 'constants/CourseSection';
 import { processDateString, weekDayLetters } from 'utils/Misc';
 
+import { Professor } from '../../hc-generated/graphql';
+
 import {
   BoldWeekDay,
   ColorBar,
@@ -82,12 +84,11 @@ const EnrolledCell = ({ cell }: CellProps) => (
 
 const TimeCell = ({ cell }: CellProps) => (
   <NormalCellWrapper>
+    {console.log('CellProps', cell)}
     {cell.value.map((cl: any, idx: number) => (
       <Fragment key={idx}>
-        <ContentWrapper italics={cl.cancelled || cl.isTba}>
-          {cl.cancelled ? 'Cancelled' : cl.isTba ? 'TBA' : cl.time}
-        </ContentWrapper>
         {contentSpace(cl.spaces)}
+        <ContentWrapper>{cl}</ContentWrapper>
         {idx < cell.value.length - 1 && <SpaceMargin />}
       </Fragment>
     ))}
@@ -97,22 +98,8 @@ const TimeCell = ({ cell }: CellProps) => (
 const DateCell = ({ cell }: CellProps) => (
   <NormalCellWrapper>
     {cell.value.length === 0 && <ContentWrapper />}
-    {cell.value.map((timeRanges: any, timeRangeIdx: number) => (
-      <Fragment key={timeRangeIdx}>
-        {timeRanges.map((date: any, idx: number) => {
-          const processedDate =
-            date.startDate === date.endDate
-              ? processDateString(date.startDate).split(', ')[1]
-              : '';
-          return (
-            <ContentWrapper key={idx}>
-              {processWeekDays(date.days)}
-              <DateText>{processedDate}</DateText>
-            </ContentWrapper>
-          );
-        })}
-        {timeRangeIdx < cell.value.length - 1 && <SpaceMargin />}
-      </Fragment>
+    {cell.value.map((dowBitmap: string, idx: number) => (
+      <Fragment key={idx}>{dowBitmap}</Fragment>
     ))}
   </NormalCellWrapper>
 );
@@ -121,8 +108,7 @@ const LocationCell = ({ cell }: CellProps) => (
   <NormalCellWrapper>
     {cell.value.map((cl: any, idx: number) => (
       <Fragment key={idx}>
-        <ContentWrapper>{cl.location}</ContentWrapper>
-        {contentSpace(cl.spaces)}
+        <ContentWrapper>{cl}</ContentWrapper>
         {idx < cell.value.length - 1 && <SpaceMargin />}
       </Fragment>
     ))}
@@ -131,18 +117,16 @@ const LocationCell = ({ cell }: CellProps) => (
 
 const InstructorCell = ({ cell }: CellProps) => (
   <NormalCellWrapper>
-    {cell.value.map((cl: any, idx: number) =>
-      cl.prof.code ? (
+    {cell.value.map((cl: Professor, idx: number) =>
+      cl.uwoId ? (
         <Fragment key={idx}>
-          <InstructorLink to={getProfPageRoute(cl.prof.code)} key={idx}>
-            {cl.prof.name}
+          <InstructorLink to={getProfPageRoute(cl.uwoId)} key={idx}>
+            {cl.name}
           </InstructorLink>
-          {contentSpace(cl.spaces)}
           {idx < cell.value.length - 1 && <SpaceMargin />}
         </Fragment>
       ) : (
         <Fragment key={idx}>
-          {contentSpace(cl.spaces + 1)}
           {idx < cell.value.length - 1 && <SpaceMargin />}
         </Fragment>
       ),

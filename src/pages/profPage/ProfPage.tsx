@@ -64,7 +64,7 @@ export const ProfPage = () => {
   ) : (
     <ProfPageWrapper>
       <Helmet>
-        <title>{data.professors[0].name} - UW Flow</title>
+        <title>{data.professors[0].name} - UWO Flow</title>
         <meta
           name="description"
           content={`Professor ${data.professors[0].name} at the University of Waterloo.`}

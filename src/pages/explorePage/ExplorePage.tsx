@@ -2,20 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useQuery } from 'react-apollo';
 import { Helmet } from 'react-helmet';
 import { useLocation } from 'react-router-dom';
-import {
-  ExploreAllQuery,
-  ExploreAllQueryVariables,
-  ExploreQuery,
-  ExploreQueryVariables,
-} from 'generated/graphql';
+import { ExploreQuery, ExploreQueryVariables } from 'hc-generated/graphql';
+import { EXPLORE_QUERY } from 'hotchocolate/queries/Explore';
 import queryString, { ParsedQuery } from 'query-string';
 
 import { SEO_DESCRIPTIONS } from 'constants/Messages';
 import { MAX_SEARCH_TERMS } from 'constants/Search';
-import {
-  EXPLORE_ALL_QUERY,
-  EXPLORE_QUERY,
-} from 'graphql/queries/explore/Explore';
 import { SearchFilterState, SearchFilterStateURL } from 'types/Common';
 
 import { EXPLORE_PAGE_ROUTE } from '../../Routes';
@@ -40,7 +32,7 @@ type ExplorePageContentProps = {
   courseTab: boolean;
   error: boolean;
   loading: boolean;
-  data?: ExploreAllQuery | ExploreQuery;
+  data?: ExploreQuery;
 };
 
 const ExplorePageContent = ({
@@ -103,15 +95,14 @@ const ExplorePageContent = ({
       return;
     }
 
-    const allProfs = exploreAll
-      ? (data as ExploreAllQuery).prof_search_index
-      : (data as ExploreQuery).search_profs;
+    const allProfs = (data as ExploreQuery).professors;
 
     const seenCourses = new Set();
     const parsedProfCourses = allProfs
       .reduce((acc: string[], result) => {
         return acc.concat(
-          result.course_codes
+          result.profCourses
+            .map((course) => course.code)
             .filter((code: string) => !seenCourses.has(code))
             .map((code: string) => {
               seenCourses.add(code);
@@ -270,16 +261,15 @@ const ExplorePage = () => {
   const processedQueryText = processRawQuery(query, codeSearch);
   const queryVariables =
     processedQueryText === ''
-      ? {}
+      ? { facultyAbbreviation: '' }
       : {
-          query: processedQueryText,
-          code_only: codeSearch,
+          facultyAbbreviation: processedQueryText,
         };
 
   const { data, error, loading } = useQuery<
-    ExploreAllQuery | ExploreQuery,
-    ExploreAllQueryVariables | ExploreQueryVariables
-  >(processedQueryText === '' ? EXPLORE_ALL_QUERY : EXPLORE_QUERY, {
+    ExploreQuery,
+    ExploreQueryVariables
+  >(EXPLORE_QUERY, {
     variables: queryVariables,
     notifyOnNetworkStatusChange: true,
     fetchPolicy: !query || query === '' ? 'no-cache' : 'cache-and-network',
@@ -288,7 +278,7 @@ const ExplorePage = () => {
   return (
     <ExplorePageWrapper>
       <Helmet>
-        <title>Explore Courses - UW Flow</title>
+        <title>Explore Courses - UWO Flow</title>
         <meta name="description" content={SEO_DESCRIPTIONS.explore} />
         <meta property="og:title" content="Explore Courses - UW Flow" />
         <meta property="og:description" content={SEO_DESCRIPTIONS.explore} />
